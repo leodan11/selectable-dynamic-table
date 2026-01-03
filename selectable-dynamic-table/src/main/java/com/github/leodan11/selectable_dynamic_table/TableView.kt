@@ -31,6 +31,7 @@ import android.widget.TextView
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
+import androidx.annotation.StringRes
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import com.github.leodan11.selectable_dynamic_table.databinding.TableValueRowBinding
@@ -837,8 +838,8 @@ class TableView : ConstraintLayout, IScrollListener, TableSelectStatusChangeList
      * @param color Color resource to use as background color.
      */
     fun setHeaderBackgroundColor(@ColorInt color: Int) {
-        binding.indexesHeaderTitle.setBackgroundColor(ContextCompat.getColor(context, color))
-        binding.tableHeaders.setBackgroundColor(ContextCompat.getColor(context, color))
+        binding.indexesHeaderTitle.setBackgroundColor(color)
+        binding.tableHeaders.setBackgroundColor(color)
     }
 
     /**
@@ -858,7 +859,7 @@ class TableView : ConstraintLayout, IScrollListener, TableSelectStatusChangeList
      * @param color Color resource to use for text color.
      */
     fun setHeaderTextColor(@ColorInt color: Int) {
-        binding.indexesHeaderTitle.setTextColor(ContextCompat.getColor(context, color))
+        binding.indexesHeaderTitle.setTextColor(color)
         headerTextColor = color
     }
 
@@ -877,7 +878,7 @@ class TableView : ConstraintLayout, IScrollListener, TableSelectStatusChangeList
      * @param color Color resource to use as background color.
      */
     fun setIndexesBackgroundColor(@ColorInt color: Int) {
-        binding.tableIndexes.setBackgroundColor(ContextCompat.getColor(context, color))
+        binding.tableIndexes.setBackgroundColor(color)
     }
 
     /**
@@ -997,7 +998,7 @@ class TableView : ConstraintLayout, IScrollListener, TableSelectStatusChangeList
      *
      * @param indexesTitle String resource to use as indexes title.
      */
-    fun setIndexesTitle(indexesTitle: Int) {
+    fun setIndexesTitle(@StringRes indexesTitle: Int) {
         setIndexesTitle(ContextCompat.getString(context, indexesTitle))
     }
 
