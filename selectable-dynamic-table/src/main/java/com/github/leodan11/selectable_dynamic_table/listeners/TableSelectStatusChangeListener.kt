@@ -13,16 +13,10 @@
 *See the License for the specific language governing permissions and
 *limitations under the License.
  */
-package dev.fazelx.selectable_dynamic_table.listeners
+package com.github.leodan11.selectable_dynamic_table.listeners
 
-import dev.fazelx.selectable_dynamic_table.model.Cell
+import com.github.leodan11.selectable_dynamic_table.model.Cell
 
-/**
- * Created on : January 29, 2023
- * Author     : FazelX
- * Name       : Selectable dynamic table
- * GitHub     : https://github.com/fazelX
- */
 
 /** Interface definition for a callback to be invoked when the table row or cell select state changes. */
 interface TableSelectStatusChangeListener {

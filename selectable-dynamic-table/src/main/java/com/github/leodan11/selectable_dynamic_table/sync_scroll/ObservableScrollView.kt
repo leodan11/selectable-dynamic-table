@@ -1,22 +1,16 @@
-package dev.fazelx.selectable_dynamic_table.sync_scroll
+package com.github.leodan11.selectable_dynamic_table.sync_scroll
 
 import android.content.Context
 import android.util.AttributeSet
-import android.widget.ScrollView
+import androidx.core.widget.NestedScrollView
 
 
-class ObservableScrollView : ScrollView {
+class ObservableScrollView : NestedScrollView {
     private var listener: IScrollListener? = null
 
-    constructor(context: Context?) : super(context) {}
-    constructor(context: Context?, attrs: AttributeSet?, defStyle: Int) : super(
-        context,
-        attrs,
-        defStyle
-    ) {
-    }
-
-    constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs) {}
+    constructor(context: Context) : super(context)
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
+    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle)
 
     fun setScrollViewListener(listener: IScrollListener?) {
         this.listener = listener

@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace 'dev.fazelx.selectable_dynamic_table'
+    namespace 'com.github.leodan11.selectable_dynamic_table'
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        minSdk 16
+        minSdk 21
         targetSdk 36
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -60,9 +60,9 @@ afterEvaluate {
             release(MavenPublication) {
                 from components.release
 
-                groupId = 'com.github.fazelx'
+                groupId = 'com.github.leodan11'
                 artifactId = 'selectable-dynamic-table'
-                version = '1.0.0-alpha01'
+                version = '1.0.0'
             }
         }
     }

@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="TableView">
-        <attr name="rows_height" format="dimension"/>
+
+        <!-- Layout -->
+        <attr name="row_height" format="dimension"/>
         <attr name="header_height" format="dimension"/>
-        <attr name="has_border" format="boolean"/>
-        <attr name="border_color" format="color"/>
+
+        <!-- Border -->
+        <attr name="show_border" format="boolean"/>
+        <attr name="border_color" format="color|reference"/>
+
+        <!-- Header -->
+        <attr name="index_header_text" format="string|reference"/>
+        <attr name="header_text_color" format="color|reference"/>
+
+        <!-- Index column -->
+        <attr name="index_text_color" format="color|reference"/>
+
+        <!-- Cells -->
+        <attr name="cell_text_color" format="color|reference"/>
+        <attr name="cell_selected_background_color" format="color|reference"/>
+        <attr name="row_selected_background_color" format="color|reference"/>
+        <attr name="selected_text_color" format="color|reference"/>
+
     </declare-styleable>
 </resources>

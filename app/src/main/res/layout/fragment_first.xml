@@ -7,18 +7,17 @@
     android:padding="16dp"
     tools:context=".FirstFragment">
 
-    <dev.fazelx.selectable_dynamic_table.TableView
+    <com.github.leodan11.selectable_dynamic_table.TableView
         android:id="@+id/fakeDataTableView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="20dp"
-        app:has_border="true"
-        app:border_color="@color/black"
-        app:rows_height="55dp"
         app:header_height="75dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:row_height="55dp"
+        app:show_border="true" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

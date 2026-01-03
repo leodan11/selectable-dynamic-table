@@ -13,7 +13,7 @@
 *See the License for the specific language governing permissions and
 *limitations under the License.
  */
-package dev.fazelx.selectable_dynamic_table
+package com.github.leodan11.selectable_dynamic_table
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -22,70 +22,101 @@ import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
 import android.util.Log
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.TableLayout
 import android.widget.TableRow
-import androidx.appcompat.widget.AppCompatTextView
+import android.widget.TextView
+import androidx.annotation.AttrRes
+import androidx.annotation.ColorInt
+import androidx.annotation.ColorRes
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
+import com.github.leodan11.selectable_dynamic_table.databinding.TableValueRowBinding
+import com.github.leodan11.selectable_dynamic_table.databinding.TableViewBinding
+import com.github.leodan11.selectable_dynamic_table.listeners.TableSelectStatusChangeListener
+import com.github.leodan11.selectable_dynamic_table.model.Cell
+import com.github.leodan11.selectable_dynamic_table.sync_scroll.IScrollListener
+import com.github.leodan11.selectable_dynamic_table.sync_scroll.ObservableScrollView
+import com.github.leodan11.selectable_dynamic_table.utils.Utils.Companion.getHeightOfView
+import com.github.leodan11.selectable_dynamic_table.utils.Utils.Companion.getOptimizedWidth
+import com.github.leodan11.selectable_dynamic_table.utils.Utils.Companion.getWidthOfView
 import com.google.android.material.card.MaterialCardView
-import dev.fazelx.selectable_dynamic_table.databinding.TableValueRowBinding
-import dev.fazelx.selectable_dynamic_table.databinding.TableViewBinding
-import dev.fazelx.selectable_dynamic_table.listeners.TableSelectStatusChangeListener
-import dev.fazelx.selectable_dynamic_table.model.Cell
-import dev.fazelx.selectable_dynamic_table.sync_scroll.IScrollListener
-import dev.fazelx.selectable_dynamic_table.sync_scroll.ObservableScrollView
-import dev.fazelx.selectable_dynamic_table.utils.Utils.Companion.getHeightOfView
-import dev.fazelx.selectable_dynamic_table.utils.Utils.Companion.getOptimizedWidth
-import dev.fazelx.selectable_dynamic_table.utils.Utils.Companion.getWidthOfView
-import java.util.*
 import kotlin.math.roundToInt
+import androidx.core.view.isNotEmpty
 
-const val DEF_MAX_VISIBLE_ITEMS = -1
 
-/**
- * Created on : January 29, 2023
- * Author     : FazelX
- * Name       : Selectable dynamic table
- * GitHub     : https://github.com/fazelX
- */
-
-class TableView
-    (context: Context, attrs: AttributeSet) : ConstraintLayout(context, attrs), IScrollListener, TableSelectStatusChangeListener {
+class TableView : ConstraintLayout, IScrollListener, TableSelectStatusChangeListener {
 
     private var binding = TableViewBinding.inflate(LayoutInflater.from(context), this, false)
     private var headers: MutableList<String> = ArrayList()
     private var tableData: MutableList<List<Cell>> = ArrayList()
     private var maxVisibleItems: Int = DEF_MAX_VISIBLE_ITEMS
-    private var selectedRowColor: Int = R.color.default_dark_color
-    private var selectedCellColor: Int = R.color.selected_cell_default_color
-    private var headerTextColor: Int = android.R.color.darker_gray
-    private var indexesTextColor: Int = android.R.color.darker_gray
-    private var cellsTextColor: Int = R.color.default_dark_color
-    private var selectedCellsTextColor: Int = R.color.default_light_color
+    private var selectedRowColor: Int =
+        context.customColorResource(androidx.appcompat.R.attr.colorPrimaryDark)
+    private var selectedCellColor: Int =
+        context.customColorResource(com.google.android.material.R.attr.colorSecondary)
+    private var headerTextColor: Int =
+        context.customColorResource(com.google.android.material.R.attr.colorOutline)
+    private var indexesTextColor: Int =
+        context.customColorResource(com.google.android.material.R.attr.colorOutline)
+    private var cellsTextColor: Int =
+        context.customColorResource(com.google.android.material.R.attr.colorOnSurface)
+    private var selectedCellsTextColor: Int =
+        context.customColorResource(com.google.android.material.R.attr.colorSurface)
     private var lastSelectedCell: View? = null
     private var lastSelectedRow: TableRow? = null
     private var lastSelectedIndex: TableRow? = null
-    private var rowsHeight: Int = ViewGroup.LayoutParams.WRAP_CONTENT
-    private var headerHeight: Int = ViewGroup.LayoutParams.WRAP_CONTENT
+    private var rowsHeight: Int = LayoutParams.WRAP_CONTENT
+    private var headerHeight: Int = LayoutParams.WRAP_CONTENT
     private var hasBorder: Boolean = true
-    private var borderColor = ContextCompat.getColor(context, R.color.default_dark_color)
-    private var rowSelectChangeListener: ((isSelected: Boolean, rowData: List<Cell>, post: Int) -> Unit)? = null
+    private var borderColor =
+        context.customColorResource(androidx.appcompat.R.attr.colorPrimaryDark)
+    private var rowSelectChangeListener: ((isSelected: Boolean, rowData: List<Cell>, post: Int) -> Unit)? =
+        null
     private var cellSelectChangeListener: ((isSelected: Boolean, cell: Cell) -> Unit)? = null
     private var selectableRow: Boolean = true
     private var selectableCell: Boolean = true
 
     init {
         addView(binding.root)
-        initIndicators(context, attrs, 0)
+    }
+
+    constructor(context: Context) : super(context) {
+        initIndicators(context, null, 0, 0)
+    }
+
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+        initIndicators(context, attrs, 0, 0)
+    }
+
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr
+    ) {
+        initIndicators(context, attrs, defStyleAttr, 0)
+    }
+
+    constructor(
+        context: Context,
+        attrs: AttributeSet?,
+        defStyleAttr: Int,
+        defStyleRes: Int
+    ) : super(context, attrs, defStyleAttr, defStyleRes) {
+        initIndicators(context, attrs, defStyleAttr, defStyleRes)
     }
 
     /**
      * attrs are attributes used to build the layout parameters
      */
-    private fun initIndicators(context: Context, attrs: AttributeSet, defStyleAttr: Int) {
+    private fun initIndicators(
+        context: Context,
+        attrs: AttributeSet?,
+        defStyleAttr: Int,
+        defStyleRes: Int
+    ) {
 
         /**
          * Get TypedArray holding the attribute values in set that are listed in attrs.
@@ -94,27 +125,57 @@ class TableView
          * defStyleRes is resource identifier of a style resource that supplies default values for the attributes,
          * used only if defStyleAttr is 0 or can not be found in the theme. Can be 0 to not look for defaults.
          */
-        val typedArray = context.obtainStyledAttributes(
-            attrs,
-            R.styleable.TableView,
-            defStyleAttr,
-            0
-        )
+        val typedArray =
+            context.obtainStyledAttributes(attrs, R.styleable.TableView, defStyleAttr, defStyleRes)
 
         try {
+            // Layout
             rowsHeight = typedArray.getDimensionPixelSize(
-                R.styleable.TableView_rows_height,
-                ViewGroup.LayoutParams.MATCH_PARENT
+                R.styleable.TableView_row_height,
+                LayoutParams.MATCH_PARENT
             )
             headerHeight = typedArray.getDimensionPixelSize(
                 R.styleable.TableView_header_height,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+                LayoutParams.WRAP_CONTENT
             )
-            hasBorder = typedArray.getBoolean(R.styleable.TableView_has_border, true)
-            borderColor = typedArray.getColor(
-                R.styleable.TableView_border_color,
-                ContextCompat.getColor(context, R.color.default_dark_color)
+
+            // Border
+            hasBorder = typedArray.getBoolean(R.styleable.TableView_show_border, true)
+            borderColor = typedArray.getColor(R.styleable.TableView_border_color, borderColor)
+
+            // Header
+            val indexHeaderText =
+                typedArray.getString(R.styleable.TableView_index_header_text)
+            headerTextColor =
+                typedArray.getColor(R.styleable.TableView_header_text_color, headerTextColor)
+
+            // Index column
+            indexesTextColor =
+                typedArray.getColor(R.styleable.TableView_index_text_color, indexesTextColor)
+
+            // Cells
+            cellsTextColor =
+                typedArray.getColor(R.styleable.TableView_cell_text_color, cellsTextColor)
+            selectedCellColor = typedArray.getColor(
+                R.styleable.TableView_cell_selected_background_color,
+                selectedCellColor
             )
+            selectedRowColor = typedArray.getColor(
+                R.styleable.TableView_row_selected_background_color,
+                selectedRowColor
+            )
+            selectedCellsTextColor = typedArray.getColor(
+                R.styleable.TableView_selected_text_color,
+                selectedCellsTextColor
+            )
+
+            binding.indexesHeaderTitle.apply {
+                indexHeaderText?.let {
+                    text = it
+                }
+                setTextColor(headerTextColor)
+            }
+
         } finally {
             typedArray.recycle()
         }
@@ -142,8 +203,8 @@ class TableView
         scrollView: ObservableScrollView?,
         x: Int,
         y: Int,
-        oldx: Int,
-        oldy: Int
+        oldX: Int,
+        oldY: Int
     ) {
         if (scrollView == binding.dataTableScroll) {
             binding.indexesScroll.scrollTo(x, y)
@@ -202,13 +263,13 @@ class TableView
         //apply style to data table cell
         cellItem.apply {
             tableCellContent.text = cell.mContent
-            tableCellContent.setTextColor(ContextCompat.getColor(context, cellsTextColor))
+            tableCellContent.setTextColor(cellsTextColor)
 
             if (!hasBorder) {
                 root.strokeColor =
                     ContextCompat.getColor(context, android.R.color.transparent)
             } else {
-                if (borderColor != R.color.default_dark_color) {
+                if (borderColor != context.customColorResource(androidx.appcompat.R.attr.colorPrimaryDark)) {
                     root.strokeColor = borderColor
                 }
             }
@@ -222,7 +283,7 @@ class TableView
         //add cell to table row
         tr.addView(cellView)
 
-        if (rowsHeight != ViewGroup.LayoutParams.MATCH_PARENT)
+        if (rowsHeight != LayoutParams.MATCH_PARENT)
             cellView.layoutParams = TableRow.LayoutParams(
                 TableRow.LayoutParams.WRAP_CONTENT,
                 rowsHeight
@@ -270,12 +331,12 @@ class TableView
                 height
             )
             tableCellContent.text = (index + 1).toString()
-            tableCellContent.setTextColor(ContextCompat.getColor(context, indexesTextColor))
+            tableCellContent.setTextColor(indexesTextColor)
 
             if (!hasBorder) {
                 root.strokeColor = ContextCompat.getColor(context, android.R.color.transparent)
             } else {
-                if (borderColor != R.color.default_dark_color) {
+                if (borderColor != context.customColorResource(androidx.appcompat.R.attr.colorPrimaryDark)) {
                     root.strokeColor = borderColor
                 }
             }
@@ -317,18 +378,13 @@ class TableView
                     root.strokeColor =
                         ContextCompat.getColor(context, android.R.color.transparent)
                 } else {
-                    if (borderColor != R.color.default_dark_color) {
+                    if (borderColor != context.customColorResource(androidx.appcompat.R.attr.colorPrimaryDark)) {
                         root.strokeColor = borderColor
                     }
                 }
 
                 tableCellContent.text = headers[i]
-                tableCellContent.setTextColor(
-                    ContextCompat.getColor(
-                        context,
-                        headerTextColor
-                    )
-                )
+                tableCellContent.setTextColor(headerTextColor)
                 root.layoutParams = TableRow.LayoutParams(
                     TableRow.LayoutParams.WRAP_CONTENT,
                     headerHeight
@@ -434,12 +490,17 @@ class TableView
             //change selected row style
             tr.apply {
                 tr.isSelected = true
-                setBackgroundColor(ContextCompat.getColor(context, selectedRowColor))
+                setBackgroundColor(selectedRowColor)
             }
 
             //change corresponding index style
-            binding.tableIndexes.getChildAt(tr.id)
-                .setBackgroundColor(ContextCompat.getColor(context, selectedRowColor))
+            binding.tableIndexes.getChildAt(tr.id).apply {
+                (findViewById<TextView>(R.id.table_cell_content)!!).apply {
+                    setTextColor(selectedCellsTextColor)
+                    setTypeface(null, Typeface.BOLD)
+                }
+                setBackgroundColor(selectedRowColor)
+            }
 
             //change selected row cell's style
             for (i in 0..tr.childCount) {
@@ -459,13 +520,18 @@ class TableView
             }
 
             //change corresponding index style
-            binding.tableIndexes.getChildAt(tr.id)
-                .setBackgroundColor(
+            binding.tableIndexes.getChildAt(tr.id).apply {
+                (findViewById<TextView>(R.id.table_cell_content)).apply {
+                    setTextColor(indexesTextColor)
+                    setTypeface(null, Typeface.NORMAL)
+                }
+                setBackgroundColor(
                     ContextCompat.getColor(
                         context,
                         android.R.color.transparent
                     )
                 )
+            }
 
             //change unselected row cell's style
             for (i in 0..tr.childCount) {
@@ -493,28 +559,21 @@ class TableView
 
         if (isCellSelected) {
 
-            (cellView.findViewById(R.id.table_cell_content) as AppCompatTextView).apply {
-                setTextColor(
-                    ContextCompat.getColor(context, selectedCellsTextColor)
-                )
+            (cellView.findViewById<TextView>(R.id.table_cell_content)!!).apply {
+                setTextColor(selectedCellsTextColor)
                 setTypeface(null, Typeface.BOLD)
             }
 
             //prevent cell background color change when row selected
             if (!isRowSelected)
-                cellView.setBackgroundColor(ContextCompat.getColor(context, selectedCellColor))
+                cellView.setBackgroundColor(selectedCellColor)
             cellView.isSelected = true
 
 
         } else {
-            (cellView.findViewById(R.id.table_cell_content) as AppCompatTextView).apply {
-
-                setTextColor(
-                    ContextCompat.getColor(context, cellsTextColor)
-                )
-
+            (cellView.findViewById<TextView>(R.id.table_cell_content)).apply {
+                setTextColor(cellsTextColor)
                 setTypeface(null, Typeface.NORMAL)
-
             }
 
             cellView.setBackgroundColor(
@@ -589,7 +648,7 @@ class TableView
      */
     private fun optimizeTableHeight() {
 
-        if (tableData.size > maxVisibleItems && binding.tableData.childCount > 0) {
+        if (tableData.size > maxVisibleItems && binding.tableData.isNotEmpty()) {
             val dataRowHeight = getHeightOfView(binding.tableData.getChildAt(0))
             val headerHeight = getHeightOfView(binding.tableHeaders)
             val tableHeight: Int =
@@ -612,7 +671,7 @@ class TableView
      */
     fun setData(headers: List<String>?, data: List<List<Cell>>) {
 
-        if (!tableData.isNullOrEmpty())
+        if (tableData.isNotEmpty())
             clearTable()
 
         if (!headers.isNullOrEmpty())
@@ -733,7 +792,7 @@ class TableView
      * Call this before fillToTable() function.
      *
      * @param hasBorder Whether the card has border
-     * @attr ref dev.fazelx.selectable_dynamic_table.R.values#table_view_dec_app_has_border
+     *
      */
     fun setHasBorder(hasBorder: Boolean) {
         this.hasBorder = hasBorder
@@ -744,12 +803,23 @@ class TableView
      * Call this before fillToTable() function.
      *
      * @param color Color resource to use for border color.
-     * @attr ref dev.fazelx.selectable_dynamic_table.R.values#table_view_dec_app_border_color
+     *
      */
-    fun setBorderColor(color: Int) {
+    fun setBorderColorRes(@ColorRes color: Int) {
+        setBorderColor(ContextCompat.getColor(context, color))
+    }
+
+    /**
+     * Sets the border color to this table.
+     * Call this before fillToTable() function.
+     *
+     * @param color Color resource to use for border color.
+     *
+     */
+    fun setBorderColor(@ColorInt color: Int) {
         borderColor = color
-        binding.cardLyt.strokeColor = ContextCompat.getColor(context, color)
-        binding.indexesHeaderTitleCard.strokeColor = ContextCompat.getColor(context, color)
+        binding.cardLyt.strokeColor = color
+        binding.indexesHeaderTitleCard.strokeColor = color
     }
 
     /**
@@ -757,7 +827,16 @@ class TableView
      *
      * @param color Color resource to use as background color.
      */
-    fun setHeaderBackgroundColor(color: Int) {
+    fun setHeaderBackgroundColorRes(@ColorRes color: Int) {
+        setHeaderBackgroundColor(ContextCompat.getColor(context, color))
+    }
+
+    /**
+     * Sets the header background color to this table.
+     *
+     * @param color Color resource to use as background color.
+     */
+    fun setHeaderBackgroundColor(@ColorInt color: Int) {
         binding.indexesHeaderTitle.setBackgroundColor(ContextCompat.getColor(context, color))
         binding.tableHeaders.setBackgroundColor(ContextCompat.getColor(context, color))
     }
@@ -768,17 +847,36 @@ class TableView
      *
      * @param color Color resource to use for text color.
      */
-    fun setHeaderTextColor(color: Int) {
+    fun setHeaderTextColorRes(@ColorRes color: Int) {
+        setHeaderTextColor(ContextCompat.getColor(context, color))
+    }
+
+    /**
+     * Sets the header cell's text color to this table.
+     * Call this before fillToTable() function.
+     *
+     * @param color Color resource to use for text color.
+     */
+    fun setHeaderTextColor(@ColorInt color: Int) {
         binding.indexesHeaderTitle.setTextColor(ContextCompat.getColor(context, color))
         headerTextColor = color
     }
 
     /**
-     * Sets the indexe's background color.
+     * Sets the indexes background color.
      *
      * @param color Color resource to use as background color.
      */
-    fun setIndexesBackgroundColor(color: Int) {
+    fun setIndexesBackgroundColorRes(@ColorRes color: Int) {
+        setIndexesBackgroundColor(ContextCompat.getColor(context, color))
+    }
+
+    /**
+     * Sets the indexes background color.
+     *
+     * @param color Color resource to use as background color.
+     */
+    fun setIndexesBackgroundColor(@ColorInt color: Int) {
         binding.tableIndexes.setBackgroundColor(ContextCompat.getColor(context, color))
     }
 
@@ -788,7 +886,17 @@ class TableView
      *
      * @param color Color resource to use for text color.
      */
-    fun setIndexesTextColor(color: Int) {
+    fun setIndexesTextColorRes(@ColorRes color: Int) {
+        setIndexesTextColor(ContextCompat.getColor(context, color))
+    }
+
+    /**
+     * Sets the index cell's text color to this table.
+     * Call this before fillToTable() function.
+     *
+     * @param color Color resource to use for text color.
+     */
+    fun setIndexesTextColor(@ColorInt color: Int) {
         indexesTextColor = color
     }
 
@@ -797,8 +905,17 @@ class TableView
      *
      * @param color Color resource to use as background color.
      */
-    fun setDataTableBackgroundColor(color: Int) {
-        binding.tableData.setBackgroundColor(ContextCompat.getColor(context, color))
+    fun setDataTableBackgroundColorRes(@ColorRes color: Int) {
+        setDataTableBackgroundColor(ContextCompat.getColor(context, color))
+    }
+
+    /**
+     * Sets the data's background color.
+     *
+     * @param color Color resource to use as background color.
+     */
+    fun setDataTableBackgroundColor(@ColorInt color: Int) {
+        binding.tableData.setBackgroundColor(color)
     }
 
     /**
@@ -807,7 +924,17 @@ class TableView
      *
      * @param color Color resource to use for text color.
      */
-    fun setDataCellsTextColor(color: Int) {
+    fun setDataCellsTextColorRes(@ColorRes color: Int) {
+        setDataCellsTextColor(ContextCompat.getColor(context, color))
+    }
+
+    /**
+     * Sets the data cell's text color to this table.
+     * Call this before fillToTable() function.
+     *
+     * @param color Color resource to use for text color.
+     */
+    fun setDataCellsTextColor(@ColorInt color: Int) {
         cellsTextColor = color
     }
 
@@ -816,7 +943,16 @@ class TableView
      *
      * @param color Color resource to use for text color.
      */
-    fun setSelectedCellsTextColor(color: Int) {
+    fun setSelectedCellsTextColorRes(@ColorRes color: Int) {
+        setSelectedCellsTextColor(ContextCompat.getColor(context, color))
+    }
+
+    /**
+     * Sets the selected data cell's text color to this table.
+     *
+     * @param color Color resource to use for text color.
+     */
+    fun setSelectedCellsTextColor(@ColorInt color: Int) {
         selectedCellsTextColor = color
     }
 
@@ -825,7 +961,16 @@ class TableView
      *
      * @param color Color resource to use as background color.
      */
-    fun setSelectedRowColor(color: Int) {
+    fun setSelectedRowColorRes(@ColorRes color: Int) {
+        setSelectedRowColor(ContextCompat.getColor(context, color))
+    }
+
+    /**
+     * Sets the selected row's background color to this table.
+     *
+     * @param color Color resource to use as background color.
+     */
+    fun setSelectedRowColor(@ColorInt color: Int) {
         selectedRowColor = color
     }
 
@@ -834,8 +979,26 @@ class TableView
      *
      * @param color Color resource to use as background color.
      */
-    fun setSelectedCellColor(color: Int) {
+    fun setSelectedCellColorRes(@ColorRes color: Int) {
+        setSelectedCellColor(ContextCompat.getColor(context, color))
+    }
+
+    /**
+     * Sets the selected cell's background color to this table.
+     *
+     * @param color Color resource to use as background color.
+     */
+    fun setSelectedCellColor(@ColorInt color: Int) {
         selectedCellColor = color
+    }
+
+    /**
+     * Sets the indexes general title to this table.
+     *
+     * @param indexesTitle String resource to use as indexes title.
+     */
+    fun setIndexesTitle(indexesTitle: Int) {
+        setIndexesTitle(ContextCompat.getString(context, indexesTitle))
     }
 
     /**
@@ -862,7 +1025,7 @@ class TableView
      * Call this after fillToTable() function.
      *
      * @param height is the desired height to set to the headers.
-     * @attr ref dev.fazelx.selectable_dynamic_table.R.values#table_view_dec_app_header_height
+     *
      */
     fun setHeaderHeight(height: Int) {
         val headerRow = binding.tableHeaders.getChildAt(0) as TableRow
@@ -887,7 +1050,7 @@ class TableView
      * Call this before fillToTable() function.
      *
      * @param height is the desired height to set to the rows.
-     * @attr ref dev.fazelx.selectable_dynamic_table.R.values#table_view_dec_app_rows_height
+     *
      */
     fun setRowsHeight(height: Int) {
         rowsHeight = height
@@ -914,6 +1077,16 @@ class TableView
     fun setSelectingStatus(selectableRow: Boolean, selectableCell: Boolean) {
         this.selectableRow = selectableRow
         this.selectableCell = selectableCell
+    }
+
+    private fun Context.customColorResource(@AttrRes idAttrRes: Int, fallbackColor: Int = 0): Int {
+        val typedValue = TypedValue()
+        val resolved = this.theme.resolveAttribute(idAttrRes, typedValue, true)
+        return if (resolved) typedValue.data else fallbackColor
+    }
+
+    companion object {
+        const val DEF_MAX_VISIBLE_ITEMS = -1
     }
 
 //------------------------------------------------------------------------------------------------\\

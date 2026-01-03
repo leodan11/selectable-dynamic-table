@@ -1,4 +1,4 @@
-package dev.fazelx.selectable_dynamic_table
+package com.github.leodan11.selectable_dynamic_table
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("dev.fazelx.selectable_dynamic_table.test", appContext.packageName)
+        assertEquals("com.github.leodan11.selectable_dynamic_table.test", appContext.packageName)
     }
 }

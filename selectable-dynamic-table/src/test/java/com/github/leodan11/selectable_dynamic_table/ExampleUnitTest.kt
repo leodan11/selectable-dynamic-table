@@ -1,4 +1,4 @@
-package dev.fazelx.selectable_dynamic_table
+package com.github.leodan11.selectable_dynamic_table
 
 import org.junit.Test
 
